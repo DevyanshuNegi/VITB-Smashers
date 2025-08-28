@@ -7,38 +7,23 @@ generator client {
 
 datasource db {
     provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+// --- NECESSARY FOR NEXTAUTH ---
 
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-}
-
-// Necessary for Next auth
 model Account {
     id                       String  @id @default(cuid())
     userId                   String
     type                     String
     provider                 String
     providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
+    refresh_token            String?
+    access_token             String?
     expires_at               Int?
     token_type               String?
     scope                    String?
-    id_token                 String? // @db.Text
+    id_token                 String?
     session_state            String?
     user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
     refresh_token_expires_in Int?
@@ -62,7 +47,9 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
+
+    // RELATION: A user can have many purchases
+    purchases Purchase[]
 }
 
 model VerificationToken {
@@ -71,4 +58,91 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+// --- YOUR APPLICATION MODELS ---
+
+model Product {
+    id                  String  @id @default(cuid())
+    name                String
+    description         String?
+    price               Int
+    isActive            Boolean @default(true)
+    googleDriveFolderId String  @unique
+
+    // --- Relationships ---
+    batchId String?
+    batch   Batch?  @relation(fields: [batchId], references: [id])
+
+    branchId String?
+    branch   Branch? @relation(fields: [branchId], references: [id])
+
+    semesterId String?
+    semester   Semester? @relation(fields: [semesterId], references: [id])
+
+    typeId String
+    type   Type   @relation(fields: [typeId], references: [id])
+
+    // RELATION: A product can be part of many purchases
+    purchases Purchase[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+// --- CATEGORY MODELS ---
+
+model Batch {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    products Product[]
+}
+
+model Branch {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    products Product[]
+}
+
+model Semester {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    products Product[]
+}
+
+model Type {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    products Product[]
+}
+
+// --- NEW E-COMMERCE MODELS ---
+
+// Used to track the status of a payment
+enum PurchaseStatus {
+    PENDING
+    SUCCESS
+    FAILED
+    REFUNDED
+}
+
+// This is the receipt that connects a user to a product
+model Purchase {
+    id     String @id @default(cuid())
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+
+    status PurchaseStatus @default(PENDING)
+
+    // Store the price at the time of purchase, in case product price changes later
+    amountPaid Int
+
+    // Store the transaction ID from Stripe, Razorpay, etc. for reference
+    paymentGatewayId String? @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
