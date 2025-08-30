@@ -72,7 +72,7 @@ export default function CategoriesPage() {
 
                 {/* Quick Actions */}
                 <div className="mt-12 bg-purple-50 rounded-lg p-8 text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Can't find what you're looking for?</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Can&apos;t find what you&apos;re looking for?</h2>
                     <p className="text-gray-600 mb-6">Browse all available notes or use our search feature.</p>
                     <div className="space-x-4">
                         <Link

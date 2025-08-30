@@ -82,7 +82,7 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Name</label>
-                            <p className="text-gray-900">{session.user?.name || "Not provided"}</p>
+                            <p className="text-gray-900">{session.user?.name ?? "Not provided"}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Email</label>

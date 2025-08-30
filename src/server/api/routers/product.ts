@@ -5,6 +5,8 @@ import {
     protectedProcedure,
     publicProcedure,
 } from "~/server/api/trpc";
+import { verifyPaymentSignature } from "~/lib/razorpay";
+import { grantFolderAccess } from "~/lib/google-drive";
 
 export const productRouter = createTRPCRouter({
     // Get all products with pagination and filters
@@ -145,7 +147,7 @@ export const productRouter = createTRPCRouter({
                 where: { id: input.productId },
             });
 
-            if (!product || !product.isActive) {
+            if (!product?.isActive) {
                 throw new Error("Product not found or not available");
             }
 
@@ -162,6 +164,73 @@ export const productRouter = createTRPCRouter({
                     product: true,
                 },
             });
+
+            return purchase;
+        }),
+
+    // Verify and complete Razorpay payment
+    verifyRazorpayPayment: protectedProcedure
+        .input(
+            z.object({
+                productId: z.string(),
+                razorpayOrderId: z.string(),
+                razorpayPaymentId: z.string(),
+                razorpaySignature: z.string(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Get product to get the price
+            const product = await ctx.db.product.findUnique({
+                where: { id: input.productId },
+            });
+
+            if (!product?.isActive) {
+                throw new Error("Product not found or not available");
+            }
+
+            // Check if user already purchased this product
+            const existingPurchase = await ctx.db.purchase.findFirst({
+                where: {
+                    userId: ctx.session.user.id,
+                    productId: input.productId,
+                    status: 'SUCCESS',
+                },
+            });
+
+            if (existingPurchase) {
+                throw new Error("You have already purchased this product");
+            }
+
+            // Create or update purchase record with Razorpay details
+            const purchase = await ctx.db.purchase.create({
+                data: {
+                    userId: ctx.session.user.id,
+                    productId: input.productId,
+                    amountPaid: product.price,
+                    paymentGatewayId: input.razorpayPaymentId,
+                    status: 'SUCCESS',
+                },
+                include: {
+                    product: {
+                        include: {
+                            batch: true,
+                            branch: true,
+                            semester: true,
+                            type: true,
+                        },
+                    },
+                },
+            });
+
+            // Grant Google Drive folder access to the user
+            if (product.googleDriveFolderId && ctx.session.user.email) {
+                try {
+                    await grantFolderAccess(product.googleDriveFolderId, ctx.session.user.email);
+                } catch (error) {
+                    console.error('Failed to grant Google Drive access:', error);
+                    // Don't fail the purchase if Drive access fails
+                }
+            }
 
             return purchase;
         }),

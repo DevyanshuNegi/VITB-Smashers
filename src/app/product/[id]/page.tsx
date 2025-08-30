@@ -3,6 +3,8 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Header } from "~/app/_components/header";
+import { RazorpayPayment } from "~/app/_components/razorpay-payment";
+import { UserNotesAccess } from "~/app/_components/user-notes-access";
 import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
 
@@ -24,37 +26,11 @@ export default function ProductPage() {
         { enabled: !!session && !!productId }
     );
 
-    const createPurchaseMutation = api.product.createPurchase.useMutation({
-        onSuccess: () => {
-            alert("Purchase successful! You can now access the notes.");
-            router.push("/dashboard");
-        },
-        onError: (error) => {
-            alert(`Purchase failed: ${error.message}`);
-            setIsPurchasing(false);
-        },
-    });
-
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
         }).format(price / 100);
-    };
-
-    const handlePurchase = async () => {
-        if (!session) {
-            router.push("/api/auth/signin");
-            return;
-        }
-
-        setIsPurchasing(true);
-        // In a real app, you'd integrate with a payment gateway here
-        // For demo purposes, we'll simulate a successful payment
-        createPurchaseMutation.mutate({
-            productId,
-            paymentGatewayId: `demo_${Date.now()}`, // Demo payment ID
-        });
     };
 
     if (productLoading) {
@@ -201,13 +177,25 @@ export default function ProductPage() {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <button
-                                                    onClick={handlePurchase}
+                                                <RazorpayPayment
+                                                    productId={product.id}
+                                                    productName={product.name}
+                                                    amount={product.price}
+                                                    onSuccess={() => {
+                                                        router.push("/dashboard");
+                                                        // Refresh the page to update purchase status
+                                                        window.location.reload();
+                                                    }}
+                                                    onError={(error) => {
+                                                        alert(`Payment failed: ${error}`);
+                                                        setIsPurchasing(false);
+                                                    }}
                                                     disabled={isPurchasing}
-                                                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-6 py-3 rounded-md font-medium"
                                                 >
-                                                    {isPurchasing ? "Processing..." : "Purchase Now"}
-                                                </button>
+                                                    <span className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-6 py-3 rounded-md font-medium">
+                                                        {isPurchasing ? "Processing..." : "Purchase Now"}
+                                                    </span>
+                                                </RazorpayPayment>
                                             )}
                                         </>
                                     ) : (
@@ -247,6 +235,15 @@ export default function ProductPage() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Notes Access Section */}
+                        <div className="mt-12">
+                            <UserNotesAccess
+                                productId={product.id}
+                                productName={product.name}
+                                googleDriveFolderId={product.googleDriveFolderId ?? undefined}
+                            />
                         </div>
                     </div>
                 </div>

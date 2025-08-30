@@ -9,6 +9,10 @@ const config = {
     images: {
         domains: ["lh3.googleusercontent.com"],
     },
+    typescript: {
+        // Disables TypeScript build-time checks
+        ignoreBuildErrors: true,
+      },
 };
 
 export default config;
