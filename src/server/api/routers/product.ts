@@ -5,7 +5,6 @@ import {
     protectedProcedure,
     publicProcedure,
 } from "~/server/api/trpc";
-import { verifyPaymentSignature } from "~/lib/razorpay";
 import { grantFolderAccess } from "~/lib/google-drive";
 
 export const productRouter = createTRPCRouter({
@@ -222,14 +221,34 @@ export const productRouter = createTRPCRouter({
                 },
             });
 
-            // Grant Google Drive folder access to the user
+            // Grant Google Drive folder access to the user (if folder ID is valid)
             if (product.googleDriveFolderId && ctx.session.user.email) {
-                try {
-                    await grantFolderAccess(product.googleDriveFolderId, ctx.session.user.email);
-                } catch (error) {
-                    console.error('Failed to grant Google Drive access:', error);
-                    // Don't fail the purchase if Drive access fails
+                // Skip if folder ID looks invalid or is a placeholder
+                const isValidFolderId = product.googleDriveFolderId.length > 10 && 
+                                      !product.googleDriveFolderId.includes('placeholder') &&
+                                      !product.googleDriveFolderId.includes('test');
+                
+                if (isValidFolderId) {
+                    try {
+                        const accessGranted = await grantFolderAccess(
+                            product.googleDriveFolderId, 
+                            ctx.session.user.email
+                        );
+                        
+                        if (!accessGranted) {
+                            console.warn(`Failed to grant Google Drive access for product ${product.id} to user ${ctx.session.user.email}`);
+                        } else {
+                            console.log(`Successfully granted Google Drive access for product ${product.id} to user ${ctx.session.user.email}`);
+                        }
+                    } catch (error) {
+                        console.error('Failed to grant Google Drive access:', error);
+                        // Don't fail the purchase if Drive access fails
+                    }
+                } else {
+                    console.log(`Skipping Google Drive access - invalid folder ID for product ${product.id}`);
                 }
+            } else {
+                console.log(`No Google Drive folder ID or user email for product ${product.id}`);
             }
 
             return purchase;

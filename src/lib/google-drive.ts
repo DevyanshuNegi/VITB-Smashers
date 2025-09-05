@@ -34,6 +34,23 @@ export interface SharePermission {
 }
 
 /**
+ * Check if a folder exists and is accessible
+ */
+export async function checkFolderExists(folderId: string): Promise<boolean> {
+  console.log('Checking folder existence for ID:', folderId);
+  try {
+    await drive.files.get({
+      fileId: folderId,
+      fields: 'id, name',
+    });
+    return true;
+  } catch (error) {
+    console.error('Folder not found or not accessible:', error);
+    return false;
+  }
+}
+
+/**
  * Grant access to a Google Drive folder for a specific user
  */
 export async function grantFolderAccess(
@@ -41,8 +58,16 @@ export async function grantFolderAccess(
   userEmail: string
 ): Promise<boolean> {
   try {
+    // First check if the folder exists and is accessible
+    const folderExists = await checkFolderExists(folderId);
+    if (!folderExists) {
+      console.error(`Folder ${folderId} not found or not accessible by service account`);
+      return false;
+    }
+
     await drive.permissions.create({
       fileId: folderId,
+      supportsAllDrives: true,
       requestBody: {
         role: 'reader',
         type: 'user',
@@ -164,5 +189,43 @@ export async function checkUserAccess(
   } catch (error) {
     console.error('Error checking user access:', error);
     return false;
+  }
+}
+
+/**
+ * Create a test folder in Google Drive (for development purposes)
+ */
+export async function createTestFolder(folderName: string): Promise<string | null> {
+  try {
+    const response = await drive.files.create({
+      requestBody: {
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder',
+      },
+      fields: 'id, name, webViewLink',
+    });
+
+    const folderId = response.data.id;
+    
+    if (folderId) {
+      console.log(`Created test folder: ${folderName} with ID: ${folderId}`);
+      console.log(`Folder URL: ${response.data.webViewLink}`);
+      
+      // Make the folder accessible to anyone with the link for testing
+      await drive.permissions.create({
+        fileId: folderId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone',
+        },
+      });
+      
+      return folderId;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error creating test folder:', error);
+    return null;
   }
 }

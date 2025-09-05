@@ -13,7 +13,11 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { 
+          success: false, 
+          error: 'Authentication required',
+          message: 'You must be signed in to access folder contents. Please sign in and try again.'
+        },
         { status: 401 }
       );
     }

@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { 
+          success: false, 
+          error: 'Authentication required',
+          message: 'You must be signed in to grant folder access. Please sign in and try again.'
+        },
         { status: 401 }
       );
     }
@@ -23,6 +27,7 @@ export async function POST(request: NextRequest) {
     const { folderId, userEmail } = grantAccessSchema.parse(body);
 
     // Grant access to the folder
+    // TODO: here starts
     const success = await grantFolderAccess(folderId, userEmail);
 
     if (success) {

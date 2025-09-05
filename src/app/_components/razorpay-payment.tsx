@@ -64,7 +64,12 @@ export function RazorpayPayment({
             });
         },
         onError: (error) => {
-            onError(error.message);
+            // Check if this is an authentication error
+            if (error.message.includes("UNAUTHORIZED") || error.message.includes("must be signed in")) {
+                onError("Please sign in to complete your purchase.");
+            } else {
+                onError(error.message);
+            }
         },
     });
 

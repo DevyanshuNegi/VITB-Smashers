@@ -3,6 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Header } from "~/app/_components/header";
+import { AuthError } from "~/app/_components/auth-error-boundary";
+import { TRPCErrorHandler } from "~/app/_components/trpc-error-handler";
 import { api } from "~/trpc/react";
 import { useEffect } from "react";
 
@@ -12,7 +14,10 @@ export default function DashboardPage() {
 
     const { data: purchases, isLoading, error, refetch } = api.product.getUserPurchases.useQuery(
         undefined,
-        { enabled: !!session }
+        { 
+            enabled: !!session,
+            retry: false
+        }
     );
 
     useEffect(() => {
@@ -61,8 +66,17 @@ export default function DashboardPage() {
         );
     }
 
+    if (status === "unauthenticated") {
+        return <AuthError message="Please sign in to view your dashboard and purchased notes." />;
+    }
+
+    // Check for authentication-related errors
+    if (error && (error.message.includes("UNAUTHORIZED") || error.message.includes("must be signed in"))) {
+        return <AuthError message="Your session has expired. Please sign in again to view your dashboard." onRetry={() => refetch()} />;
+    }
+
     if (!session) {
-        return null; // Will redirect in useEffect
+        return <AuthError message="Please sign in to view your dashboard and purchased notes." />;
     }
 
     return (
@@ -111,9 +125,10 @@ export default function DashboardPage() {
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                             </div>
                         ) : error ? (
-                            <div className="text-center py-8">
-                                <p className="text-red-600">Error loading purchases. Please try again.</p>
-                            </div>
+                            <TRPCErrorHandler 
+                                error={error} 
+                                retry={() => refetch()}
+                            />
                         ) : !purchases?.length ? (
                             <div className="text-center py-8">
                                 <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
