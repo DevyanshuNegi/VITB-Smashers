@@ -3,8 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Header } from "~/app/_components/header";
-import { AuthError } from "~/app/_components/auth-error-boundary";
-import { TRPCErrorHandler } from "~/app/_components/trpc-error-handler";
+// import { AuthError } from "~/app/_components/auth-error-boundary";
+// import { TRPCErrorHandler } from "~/app/_components/trpc-error-handler";
 import { api } from "~/trpc/react";
 import { useEffect } from "react";
 
@@ -66,18 +66,18 @@ export default function DashboardPage() {
         );
     }
 
-    if (status === "unauthenticated") {
-        return <AuthError message="Please sign in to view your dashboard and purchased notes." />;
-    }
+    // if (status === "unauthenticated") {
+    //     return <AuthError message="Please sign in to view your dashboard and purchased notes." />;
+    // }
 
-    // Check for authentication-related errors
-    if (error && (error.message.includes("UNAUTHORIZED") || error.message.includes("must be signed in"))) {
-        return <AuthError message="Your session has expired. Please sign in again to view your dashboard." onRetry={() => refetch()} />;
-    }
+    // // Check for authentication-related errors
+    // if (error && (error.message.includes("UNAUTHORIZED") || error.message.includes("must be signed in"))) {
+    //     return <AuthError message="Your session has expired. Please sign in again to view your dashboard." onRetry={() => refetch()} />;
+    // }
 
-    if (!session) {
-        return <AuthError message="Please sign in to view your dashboard and purchased notes." />;
-    }
+    // if (!session) {
+    //     return <AuthError message="Please sign in to view your dashboard and purchased notes." />;
+    // }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -120,16 +120,17 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="p-6">
-                        {isLoading ? (
+                        {(isLoading) ? (
                             <div className="flex justify-center items-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                             </div>
-                        ) : error ? (
-                            <TRPCErrorHandler 
-                                error={error} 
-                                retry={() => refetch()}
-                            />
-                        ) : !purchases?.length ? (
+                        ) : (error) ? (
+                            // <TRPCErrorHandler 
+                            //     error={error} 
+                            //     retry={() => refetch()}
+                            // />
+                            null
+                        ) : (!purchases || purchases.length === 0) ? (
                             <div className="text-center py-8">
                                 <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />

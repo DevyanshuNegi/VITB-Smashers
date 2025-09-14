@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { type Product, type Batch, type Branch, type Semester, type Type } from "@prisma/client";
+import { signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 type ProductWithRelations = Product & {
   batch?: Batch | null;
@@ -16,6 +18,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, isPurchased = false }: ProductCardProps) {
+  const { data: session } = useSession();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -77,12 +81,23 @@ export function ProductCard({ product, isPurchased = false }: ProductCardProps) 
           <div className="text-xl font-bold text-gray-900">
             {formatPrice(product.price)}
           </div>
+          {/* check if authenticated */}
+          { session ?
           <Link
             href={`/product/${product.id}`}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
           >
             {isPurchased ? 'View Details' : 'View & Buy'}
           </Link>
+:
+          <button
+            onClick={() => signIn()}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+          >
+            Sign In
+          </button>
+
+}
         </div>
       </div>
     </div>
