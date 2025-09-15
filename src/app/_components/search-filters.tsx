@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "~/trpc/react";
 
 interface SearchFiltersProps {
@@ -26,7 +26,7 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
   const { data: semesters } = api.category.getSemesters.useQuery();
   const { data: types } = api.category.getTypes.useQuery();
 
-  const handleFilterChange = () => {
+  const debouncedHandleFilterChange = useCallback(() => {
     onFiltersChange({
       search,
       batchId,
@@ -34,7 +34,21 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
       semesterId,
       typeId,
     });
-  };
+  }, [search, batchId, branchId, semesterId, typeId, onFiltersChange]);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      debouncedHandleFilterChange();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Immediate filter change for dropdowns
+  useEffect(() => {
+    debouncedHandleFilterChange();
+  }, [batchId, branchId, semesterId, typeId]);
 
   const clearFilters = () => {
     setSearch("");
@@ -63,10 +77,7 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
             type="text"
             id="search"
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setTimeout(handleFilterChange, 300); // Debounce search
-            }}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or description..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
           />
@@ -80,10 +91,7 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
           <select
             id="batch"
             value={batchId}
-            onChange={(e) => {
-              setBatchId(e.target.value);
-              handleFilterChange();
-            }}
+            onChange={(e) => setBatchId(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="">All Batches</option>
@@ -103,10 +111,7 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
           <select
             id="branch"
             value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              handleFilterChange();
-            }}
+            onChange={(e) => setBranchId(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="">All Branches</option>
@@ -126,10 +131,7 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
           <select
             id="semester"
             value={semesterId}
-            onChange={(e) => {
-              setSemesterId(e.target.value);
-              handleFilterChange();
-            }}
+            onChange={(e) => setSemesterId(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="">All Semesters</option>
@@ -149,10 +151,7 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
           <select
             id="type"
             value={typeId}
-            onChange={(e) => {
-              setTypeId(e.target.value);
-              handleFilterChange();
-            }}
+            onChange={(e) => setTypeId(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="">All Types</option>

@@ -253,4 +253,56 @@ export const productRouter = createTRPCRouter({
 
             return purchase;
         }),
+
+    // Get filtered products without pagination
+    getFilteredProducts: publicProcedure
+        .input(z.object({
+            search: z.string().optional(),
+            batchId: z.string().optional(),
+            branchId: z.string().optional(),
+            semesterId: z.string().optional(),
+            typeId: z.string().optional(),
+        }))
+        .query(async ({ ctx, input }) => {
+            const whereClause: any = {
+                isActive: true,
+            };
+
+            // Apply filters
+            if (input.search) {
+                whereClause.OR = [
+                    { name: { contains: input.search, mode: 'insensitive' } },
+                    { description: { contains: input.search, mode: 'insensitive' } },
+                ];
+            }
+
+            if (input.batchId) {
+                whereClause.batchId = input.batchId;
+            }
+
+            if (input.branchId) {
+                whereClause.branchId = input.branchId;
+            }
+
+            if (input.semesterId) {
+                whereClause.semesterId = input.semesterId;
+            }
+
+            if (input.typeId) {
+                whereClause.typeId = input.typeId;
+            }
+
+            const products = await ctx.db.product.findMany({
+                where: whereClause,
+                include: {
+                    batch: true,
+                    branch: true,
+                    semester: true,
+                    type: true,
+                },
+                orderBy: { createdAt: 'desc' },
+            });
+
+            return products;
+        }),
 });

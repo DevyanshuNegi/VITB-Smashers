@@ -107,7 +107,7 @@ async function main() {
             batchId: batch24.id,
             branchId: csBranch.id,
             semesterId: sem2.id,
-            typeId: assignmentType.id,
+        typeId: assignmentType.id,
         },
         {
             name: "Database Management Systems - Previous Year Papers",
